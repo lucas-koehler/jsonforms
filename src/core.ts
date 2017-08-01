@@ -43,6 +43,48 @@ export class JsonForms {
   public static stylingRegistry: StylingRegistry = new StylingRegistryImpl();
   public static schemaService: SchemaService;
   public static modelMapping;
+
+  /**
+   * Uses the model mapping to filter all objects that are associated with the type
+   * defined by the given schema id.
+   *
+   * @param objects the list of objects to filter
+   * @param schemaId The id of the JsonSchema defining the type to filter for
+   * @return The filtered objects or all objects if there is no mapping
+   */
+  static filterObjectsByType = (objects: Object[], schemaId: string): Object[] => {
+    return objects.filter(value => {
+      const valueSchemaId = JsonForms.getSchemaIdForObject(value);
+      if (valueSchemaId === null) {
+        return true;
+      }
+
+      return valueSchemaId === schemaId;
+    });
+  }
+
+  /**
+   * Uses the model mapping to find the schema id defining the type of the given object.
+   * If no schema id can be determined either because the object is empty, there is no model
+   * mapping, or the object does not contain a mappable property.
+   *
+   * @param object The object whose type is determined
+   * @return The schema id of the object or null if it could not be determined
+   */
+  static getSchemaIdForObject = (object: Object): string => {
+    // TODO implement
+    if (JsonForms.modelMapping !== undefined && !_.isEmpty(object)) {
+      const mappingAttribute = JsonForms.modelMapping.attribute;
+      if (!_.isEmpty(mappingAttribute)) {
+        const mappingValue = object[mappingAttribute];
+        const schemaId: string = JsonForms.modelMapping.mapping[mappingValue];
+
+        return !_.isEmpty(schemaId) ? schemaId : null;
+      }
+    }
+
+    return null;
+  }
 }
 
 /**
@@ -58,46 +100,4 @@ export const JsonFormsServiceElement = config => (cls: JsonFormsServiceConstruct
 // tslint:enable:variable-name
 export const instantiateSchemaService = (schema: JsonSchema): void => {
   JsonForms.schemaService =  new SchemaServiceImpl(schema);
-};
-
-/**
- * Uses the model mapping to filter all objects that are associated with the type
- * defined by the given schema id.
- *
- * @param objects the list of objects to filter
- * @param schemaId The id of the JsonSchema defining the type to filter for
- * @return The filtered objects or all objects if there is no mapping
- */
-export const filterObjectsByType = (objects: Object[], schemaId: string): Object[] => {
-  return objects.filter(value => {
-    const valueSchemaId = getSchemaIdForObject(value);
-    if (valueSchemaId === null) {
-      return true;
-    }
-
-    return valueSchemaId === schemaId;
-  });
-};
-
-/**
- * Uses the model mapping to find the schema id defining the type of the given object.
- * If no schema id can be determined either because the object is empty, there is no model mapping,
- * or the object does not contain a mappable property.
- *
- * @param object The object whose type is determined
- * @return The schema id of the object or null if it could not be determined
- */
-export const getSchemaIdForObject = (object: Object): string => {
-  // TODO implement
-  if (JsonForms.modelMapping !== undefined && !_.isEmpty(object)) {
-    const mappingAttribute = JsonForms.modelMapping.attribute;
-    if (!_.isEmpty(mappingAttribute)) {
-      const mappingValue = object[mappingAttribute];
-      const schemaId: string = JsonForms.modelMapping.mapping[mappingValue];
-
-      return !_.isEmpty(schemaId) ? schemaId : null;
-    }
-  }
-
-  return null;
 };
