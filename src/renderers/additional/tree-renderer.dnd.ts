@@ -12,6 +12,23 @@ export const DROP_TARGET_CSS = 'jsf-dnd-drop-target';
 export const dragAndDropRemoveHandler = (treeNodeMapping: Map<HTMLLIElement, TreeNodeInfo>) =>
   evt => {
   const li = evt.item as HTMLLIElement;
+
+  // TODO adapt to real condition: target list cannot contain dragged element
+  // To be always consistent with add: could set attribute in add handler
+  if (li.hasAttribute('wtf')) {
+    const from = evt.from as HTMLElement;
+    if (from.children.length <= evt.oldIndex) {
+      console.log('dnd', 'remove-append');
+      from.appendChild(li);
+    } else {
+      console.log('dnd', 'remove-adjacent ' + evt.oldIndex);
+      from.children.item(evt.oldIndex).insertAdjacentElement('beforebegin', li);
+    }
+
+    return;
+  }
+  // remove end
+
   const nodeData = treeNodeMapping.get(li);
   const oldParent = evt.from.parentNode as HTMLLIElement;
   const parentData = treeNodeMapping.get(oldParent);
@@ -68,6 +85,16 @@ export const dragAndDropUpdateHandler = (treeNodeMapping: Map<HTMLLIElement, Tre
 export const dragAndDropAddHandler = (treeNodeMapping: Map<HTMLLIElement, TreeNodeInfo>) =>
   evt => {
   const li = evt.item as HTMLLIElement;
+
+  // TODO adapt to real condition: target list cannot contain dragged element
+  if (li.hasAttribute('wtf')) {
+    console.log('dnd', 'add cancel -> remove li');
+    evt.to.removeChild(li);
+
+    return;
+  }
+  // remove end
+
   const nodeInfo = treeNodeMapping.get(li);
   const newParent = evt.to.parentNode as HTMLLIElement;
   const parentInfo = treeNodeMapping.get(newParent);
