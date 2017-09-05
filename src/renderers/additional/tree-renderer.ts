@@ -440,21 +440,28 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
     }
     li.appendChild(div);
 
-    // add a separate list for each containment property
-    JsonForms.schemaService.getContainmentProperties(schema).forEach(property => {
-      const id = property.schema.id;
-      if (id === undefined || id === null) {
-        // TODO proper logging
-        console.warn('The property\'s schema with label \'' + property.label
-                     + '\' has no id. No Drag & Drop is possible.');
+    const props = JsonForms.schemaService.getContainmentProperties(schema);
+    const groupedProperties = _.groupBy(props, property => property.property);
 
-        return;
-      }
-      // create child list and activate drag and drop
+    // create list for every property in the schema, unify anyOf
+    Object.keys(groupedProperties).forEach(key => {
+      // key is the name of the property that the data is contained in
+      const properties = groupedProperties[key];
       const ul = document.createElement('ul') as HTMLUListElement;
-      ul.setAttribute('childrenId', id);
-      ul.setAttribute('children', property.property);
-      registerDnDWithGroupId(this.master, this.treeNodeMapping, ul, id);
+      // get schema ids of objects allowed in this list
+      let childrenIds = [];
+      properties.forEach(property => {
+        if (_.isEmpty(property.schema.id)) {
+          console.warn(`The property's schema with label '$(property.label)' has no schema id.
+                        No proper Drag & Drop will be possible.`);
+
+          return;
+        }
+        childrenIds = _.concat(childrenIds, property.schema.id);
+      });
+      ul.setAttribute('childrenIds', _.join(childrenIds, ' '));
+      ul.setAttribute('children', key);
+      // TODO register drag an drop
       li.appendChild(ul);
     });
 
