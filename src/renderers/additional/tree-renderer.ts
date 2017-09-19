@@ -12,7 +12,7 @@ import { Runtime, RUNTIME_TYPE } from '../../core/runtime';
 import { JsonForms } from '../../core';
 import { ContainmentProperty } from '../../core/schema.service';
 import {
-  registerDnDWithGroupId,
+  registerDragAndDrop,
   TreeNodeInfo
 } from './tree-renderer.dnd';
 
@@ -211,17 +211,16 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
         },
         dataChanged: (uischema: MasterDetailLayout, newValue: any, data: any): void => {
           const segments = uischema.scope.$ref.split('/');
-          const lastSegemnet = segments[segments.length - 1];
-          if (lastSegemnet === this.uischema.options.labelProvider[schema.id]) {
+          const lastSegment = segments[segments.length - 1];
+          if (lastSegment === this.uischema.options.labelProvider[schema.id]) {
             // TODO very ugly setting of label
             label.firstChild.lastChild.firstChild.textContent = newValue;
           }
           if (Array.isArray(newValue)) {
             const childSchema = resolveSchema(schema, uischema.scope.$ref).items;
             if (!Array.isArray(childSchema)) {
-              // TODO remove unnecessary childSchema related code?!
-              // this.renderChildren(newValue, childSchema, label, lastSegemnet);
-              this.renderChildren(newValue, label, lastSegemnet);
+              // TODO is the check of childSchema unnecessary?
+              this.renderChildren(newValue, label, lastSegment);
             }
           }
         }
@@ -277,13 +276,13 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
    *                 data object of the same index.
    * @param parentData the data containing the array as a property
    */
-  private expandArray(data: Object[], parent: HTMLUListElement, property: ContainmentProperty|ContainmentProperty[],
+  private expandArray(data: Object[], parent: HTMLUListElement,
+                      property: ContainmentProperty|ContainmentProperty[],
                       parentData?: Object): void {
     if (data === undefined || data === null) {
       return;
     }
     data.forEach((element, index) => {
-      // TODO nicer code
       let actualProperty: ContainmentProperty;
       if (Array.isArray(property)) {
         actualProperty = property[index];
@@ -461,8 +460,8 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
       });
       ul.setAttribute('childrenIds', _.join(childrenIds, ' '));
       ul.setAttribute('children', key);
-      // TODO register drag and drop
       li.appendChild(ul);
+      registerDragAndDrop(this.master, this.treeNodeMapping, ul);
     });
 
     // map li to represented data, schema & delete function
@@ -490,7 +489,9 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
    * use the model mapping to match a data object to one ContainmentProperty out of a given list
    * of ContainmentProperties.
    */
-  private matchContainmentProperty(data: Object, properties: ContainmentProperty[]): ContainmentProperty {
+  private matchContainmentProperty(data: Object, properties: ContainmentProperty[])
+            : ContainmentProperty {
+    // tslint:disable:no-string-literal
     if (this.uischema.options !== undefined &&
       this.uischema.options['modelMapping'] !== undefined) {
         const filtered = properties.filter(property => {
@@ -503,6 +504,7 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
           // NOTE if mapped attribute is not present do not filter out property
           return true;
         });
+        // tslint:enable:no-string-literal
 
         return _.head(filtered);
     }
@@ -513,23 +515,20 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
     return null;
   }
 
-  private findRendererChildContainer(li: HTMLLIElement, key: string, id?: string)
-    : HTMLUListElement {
-    // If an id is provided, the group must match key and id. Otherwise only the key.
-    let ul: HTMLUListElement;
-    const children = li.children;
-    for (let i = 0; i < children.length; i++) {
-      const child = children.item(i);
-      if (child.tagName === 'UL' && child.getAttribute('children') === key) {
-        if (!_.isEmpty(id) && child.getAttribute('childrenId') === id) {
-          ul = child as HTMLUListElement;
-        } else if (_.isEmpty(id)) {
-          ul = child as HTMLUListElement;
-        }
+  /**
+   * @param li the LI element containing the lists
+   * @param key the property key defining the searched lists content
+   * @return the list for data belonging to the given key
+   */
+  private findRendererChildContainer(li: HTMLLIElement, key: string): HTMLUListElement {
+    const children = _.filter(li.children, child => child.tagName === 'UL');
+    for (const child of children) {
+      if (child.getAttribute('children') === key) {
+        return (child as HTMLUListElement);
       }
     }
 
-    return ul;
+    return undefined;
   }
 
   /**
@@ -542,14 +541,15 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
   private renderChildren
     (array: Object[], li: HTMLLIElement, key: string): void {
     // with unified lists, no need for schema id
-    const ul: HTMLUListElement = this.findRendererChildContainer(li, key);
+    let ul: HTMLUListElement = this.findRendererChildContainer(li, key);
     if (ul === undefined) {
-      console.error('No suitable list was found for key \'' + key + '\'.');
-
-      // TODO create list if not present? if yes register d'n'd
-      return;
+      console.warn(`No suitable list was found for key '${key}'.
+                    Created a new one without drag and drop`);
+      ul = document.createElement('ul');
+      ul.setAttribute('children', key);
+      li.appendChild(ul);
     }
-
+    // clean list before re-rendering children
     while (!_.isEmpty(ul.firstChild)) {
       (ul.firstChild as Element).remove();
     }
@@ -565,14 +565,11 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
         arrayProperties.push(this.matchContainmentProperty(dataObject, keyProperties));
       }
       this.expandArray(array, ul, arrayProperties, parentInfo.data);
-
-      return;
     } else if (keyProperties.length === 1) {
+      // no anyOf
       this.expandArray(array, ul, keyProperties[0], parentInfo.data);
-
-      return;
+    } else {
+      console.error('Could not render children because no fitting property was found.');
     }
-
-    console.error('Could not render children because no fitting property was found.');
   }
 }
