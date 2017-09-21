@@ -7,7 +7,7 @@ export type TreeNodeInfo = {data: object, schema: JsonSchema,
                             deleteFunction(toDelete: object): void};
 
 export const DROP_TARGET_CSS = 'jsf-dnd-drop-target';
-const CANCEL_DND_ATTRIBUTE = 'jsf-cancel-dnd';
+export const CANCEL_DND_ATTRIBUTE = 'jsf-cancel-dnd';
 
 /**
  * Returns a function that handles the sortablejs onRemove event

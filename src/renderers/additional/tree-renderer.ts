@@ -491,9 +491,13 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
    */
   private matchContainmentProperty(data: Object, properties: ContainmentProperty[])
             : ContainmentProperty {
+    if (properties.length === 1) {
+      return properties[0];
+    }
     // tslint:disable:no-string-literal
-    if (this.uischema.options !== undefined &&
-      this.uischema.options['modelMapping'] !== undefined) {
+    if (!_.isEmpty(this.uischema.options) &&
+      !_.isEmpty(this.uischema.options['modelMapping']) &&
+      !_.isEmpty(this.uischema.options['modelMapping'].mapping)) {
         const filtered = properties.filter(property => {
           // only use filter criterion if the checked value has the mapped attribute
           if (data[this.uischema.options['modelMapping'].attribute]) {
@@ -505,6 +509,7 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
           return true;
         });
         // tslint:enable:no-string-literal
+        // TODO improve handling
 
         return _.head(filtered);
     }
