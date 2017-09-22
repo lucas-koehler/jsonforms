@@ -289,6 +289,12 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
       } else {
         actualProperty = property;
       }
+      if (_.isEmpty(actualProperty)) {
+        console.error(`Could not render data object because no containment property was given`,
+                      element);
+
+        return;
+      }
       let deleteFunction = null;
       if (!_.isEmpty(parentData)) {
         deleteFunction = actualProperty.deleteFromData(parentData);
@@ -510,6 +516,10 @@ export class TreeMasterDetailRenderer extends Renderer implements DataChangeList
         });
         // tslint:enable:no-string-literal
         // TODO improve handling
+        if (filtered.length > 1) {
+          console.warn('More than one matching containment property was found for the given data',
+                       data);
+        }
 
         return _.head(filtered);
     }
