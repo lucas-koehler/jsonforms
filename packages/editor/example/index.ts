@@ -9,7 +9,7 @@ import {
   configureUploadButton,
   createExportDataDialog
 } from '../src/toolbar';
-// import { applyMaterialStyle } from './material.styling';
+import { applyMaterialStyle } from '../src/material.styling';
 import { EcoreEditor } from './ecore-editor';
 
 window.onload = () => {
@@ -30,5 +30,5 @@ window.onload = () => {
 
   document.getElementById('editor').appendChild(editor);
 
-  // applyMaterialStyle();
+  applyMaterialStyle();
 };
