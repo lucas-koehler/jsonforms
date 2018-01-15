@@ -10,8 +10,12 @@ import {
   registerDragAndDrop,
   TreeNodeInfo
 } from './tree-renderer.dnd';
-import { StringMap, ModelMapping } from '../jsoneditor';
+import { StringMap, ModelMapping, JsonEditor } from '../jsoneditor';
 import { EditorContextChangeListener, EditorContext } from '../editor-context';
+import { Detail } from '../detail';
+import * as ReactDOM from 'react-dom';
+import * as React from 'react';
+import { Attributes } from 'react';
 
 export class TreeMasterDetailRenderer extends HTMLElement implements EditorContextChangeListener {
   private master: HTMLElement;
@@ -21,6 +25,7 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
   private addingToRoot = false;
   private _schemaService: SchemaService;
   private _editorContext: EditorContext;
+  private connected = false;
 
   /** maps tree nodes (<li>) to their represented data, and schema delete function */
   private treeNodeMapping: Map<HTMLLIElement, TreeNodeInfo> =
@@ -31,6 +36,7 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
   }
 
   connectedCallback(): void {
+    this.connected = true;
     this.render();
   }
 
@@ -69,7 +75,7 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
   render(): HTMLElement {
     if (_.isEmpty(this.schemaService) || _.isEmpty(this.editorContext)
       || this.editorContext.data === undefined || this.editorContext.data === null
-      || _.isEmpty(this.editorContext.dataSchema)) {
+      || _.isEmpty(this.editorContext.dataSchema) || !this.connected) {
       return;
     }
 
@@ -122,6 +128,7 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
     div.appendChild(this.master);
 
     this.detail = document.createElement('div');
+    this.detail.id = 'editor-tree-detail';
     this.detail.className = 'jsf-treeMasterDetail-detail';
     div.appendChild(this.detail);
 
@@ -174,20 +181,30 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
   }
 
   protected renderDetail(element: Object, label: HTMLLIElement, schema: JsonSchema): void {
-    if (this.detail.lastChild !== null) {
-      this.detail.removeChild(this.detail.lastChild);
-    }
+    // if (this.detail.lastChild !== null) {
+    //   this.detail.removeChild(this.detail.lastChild);
+    // }
     if (this.selected !== undefined) {
       this.selected.classList.toggle('selected');
     }
     label.classList.toggle('selected');
     this.selected = label;
 
-    const jsonForms = document.createElement('json-forms') as JsonFormsElement;
-    jsonForms.data = element;
-    jsonForms.dataSchema = schema;
+    const detailContainer = document.getElementById(this.detail.id);
+    // const jsonForms = document.createElement('json-forms') as JsonFormsElement;
+    // jsonForms.data = this.editorContext.data;
+    // jsonForms.dataSchema = this.editorContext.dataSchema;
+    console.log(document.getElementById(this.detail.id));
+    if (ReactDOM) {
+      const uischema = JsonEditor.getUiSchema(schema.id);
+      ReactDOM.unmountComponentAtNode(detailContainer);
+      ReactDOM.render(React.createElement(Detail, { schema, uischema }),
+        detailContainer);
 
-
+    } else {
+      console.log('Geht nix!');
+    }
+    console.log(JsonEditor.getUiSchema(schema.id));
     // NOTE check needed for tests
     // FIXME update labels by using the JsonForms Store
     // if (jsonForms.addDataChangeListener !== undefined && jsonForms.addDataChangeListener !== null) {
@@ -214,7 +231,7 @@ export class TreeMasterDetailRenderer extends HTMLElement implements EditorConte
     // }
 
 
-    this.detail.appendChild(jsonForms);
+    // this.detail.appendChild(jsonForms);
   }
 
   private renderMaster(schema: JsonSchema): void {

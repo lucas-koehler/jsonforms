@@ -9,6 +9,7 @@
     "moduleResolution": "node",
     "outDir": "dist/ts-build",
     "sourceMap": true,
+    "jsx": "react",
     "target": "es5"
   },
   "exclude":[

@@ -16,6 +16,8 @@ import * as JsonRefs from 'json-refs';
 import { EditorContext } from './editor-context';
 import { TreeMasterDetailRenderer } from './tree/tree-renderer';
 import { SchemaServiceImpl } from './services/schema.service.impl';
+import { store } from './store';
+import { getData } from '@jsonforms/core';
 
 export * from './toolbar';
 export * from './editor';
@@ -31,7 +33,12 @@ export * from './editor-config';
  */
 export class JsonEditor extends HTMLElement implements Editor {
   public static rootData;
+  static uiSchemata: {[schemaId: string]: UISchemaElement} = {};
+  
+  static getUiSchema(schemaId: string): UISchemaElement {
+    return JsonEditor.uiSchemata[schemaId];
 
+  }
   private connected = false;
   private _editorContext: EditorContext;
   private schemaPromise;
@@ -40,6 +47,8 @@ export class JsonEditor extends HTMLElement implements Editor {
   constructor() {
     super();
   }
+
+
   connectedCallback(): void {
     this.connected = true;
     this.render();
@@ -60,7 +69,8 @@ export class JsonEditor extends HTMLElement implements Editor {
    * Returns the current data displayed in the editor.
    */
   get data() {
-    return this.editorContext.data;
+    // return this.editorContext.data;
+    return getData(store.getState());
   }
   /**
    * Sets the data edited in the editor
@@ -207,8 +217,9 @@ export class JsonEditor extends HTMLElement implements Editor {
   registerDetailSchema(schemaId: string, uiSchema: UISchemaElement) {
     JsonForms.uischemaRegistry.register(uiSchema, (schema, data) =>
       schema.id !== undefined && schema.id === schemaId ? 2 : -1);
+    JsonEditor.uiSchemata[schemaId] = uiSchema;
   }
-
+   
   private render(): void {
     if (!this.connected || this.editorContext.data === undefined || this.editorContext.data === null
       || _.isEmpty(this.editorContext.dataSchema)) {
