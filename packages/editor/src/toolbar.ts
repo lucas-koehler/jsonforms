@@ -18,7 +18,7 @@ const fileInputHandler = editor => evt => {
   const reader = new FileReader();
 
   // Callback when the file was loaded
-  reader.onload = event => {
+  reader.onload = () => {
     if (reader.result === undefined || reader.result === null) {
       console.error('Could not read data');
     }

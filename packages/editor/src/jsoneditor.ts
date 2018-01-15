@@ -1,10 +1,11 @@
-import './tree/tree-renderer';
 import '@jsonforms/material-renderers';
 import {
+  initJsonFormsStore,
   JsonForms,
-  JsonFormsElement,
+  // JsonFormsElement,
+  JsonFormsStore,
   JsonSchema,
-  MasterDetailLayout,
+  // MasterDetailLayout,
   UISchemaElement
 } from '@jsonforms/core';
 import { ModelMapping } from './editor-config';
@@ -14,10 +15,12 @@ import { EditorConfiguration } from './editor-config';
 import { Resources } from './resources/resources';
 import * as JsonRefs from 'json-refs';
 import { EditorContext } from './editor-context';
-import { TreeMasterDetailRenderer } from './tree/tree-renderer';
 import { SchemaServiceImpl } from './services/schema.service.impl';
-import { store } from './store';
+// import { store } from './store';
 import { getData } from '@jsonforms/core';
+import * as ReactDOM from 'react-dom';
+import * as React from 'react';
+import { MasterDetail } from './MasterDetail';
 
 export * from './toolbar';
 export * from './editor';
@@ -34,20 +37,22 @@ export * from './editor-config';
 export class JsonEditor extends HTMLElement implements Editor {
   public static rootData;
   static uiSchemata: {[schemaId: string]: UISchemaElement} = {};
-  
+
   static getUiSchema(schemaId: string): UISchemaElement {
     return JsonEditor.uiSchemata[schemaId];
 
   }
+
+  store: JsonFormsStore;
   private connected = false;
   private _editorContext: EditorContext;
   private schemaPromise;
-  private treeRenderer: TreeMasterDetailRenderer;
+  // private treeRenderer: TreeMasterDetailRenderer;
+  private container: HTMLElement;
 
   constructor() {
     super();
   }
-
 
   connectedCallback(): void {
     this.connected = true;
@@ -70,7 +75,11 @@ export class JsonEditor extends HTMLElement implements Editor {
    */
   get data() {
     // return this.editorContext.data;
-    return getData(store.getState());
+    if (this.store === undefined || this.store === null) {
+      return {};
+    }
+
+    return getData(this.store.getState());
   }
   /**
    * Sets the data edited in the editor
@@ -215,11 +224,11 @@ export class JsonEditor extends HTMLElement implements Editor {
    * @param {UISchemaElement} uiSchema The UI Schema to use when rendering instances of the schema
    */
   registerDetailSchema(schemaId: string, uiSchema: UISchemaElement) {
-    JsonForms.uischemaRegistry.register(uiSchema, (schema, data) =>
+    JsonForms.uischemaRegistry.register(uiSchema, (schema, _data) =>
       schema.id !== undefined && schema.id === schemaId ? 2 : -1);
     JsonEditor.uiSchemata[schemaId] = uiSchema;
   }
-   
+
   private render(): void {
     if (!this.connected || this.editorContext.data === undefined || this.editorContext.data === null
       || _.isEmpty(this.editorContext.dataSchema)) {
@@ -229,14 +238,39 @@ export class JsonEditor extends HTMLElement implements Editor {
       return;
     }
 
-    if (this.treeRenderer === undefined) {
-      this.treeRenderer = document.createElement('tree-master-detail') as TreeMasterDetailRenderer;
+    if (this.container === undefined) {
+      this.container = document.createElement('div');
+      this.container.id = 'json-editor-tree-container';
+      this.appendChild(this.container);
+    }
+
+    const uischema = {
+      'type': 'MasterDetailLayout',
+      'scope': {
+        '$ref': '#'
+      },
+      'options': {
+        'labelProvider': this.editorContext.labelProvider,
+        'imageProvider': this.editorContext.imageProvider,
+        'modelMapping': this.editorContext.modelMapping
+      }
+    };
+
+    if (this.store === undefined) {
+      this.store = initJsonFormsStore(this.data, this.schema, uischema);
     }
     const schemaService = new SchemaServiceImpl(this.editorContext);
-    this.treeRenderer.schemaService = schemaService;
-    this.treeRenderer.editorContext = this.editorContext;
 
-    this.appendChild(this.treeRenderer);
+    ReactDOM.unmountComponentAtNode(this.container);
+
+    const masterDetailComponent = React.createElement(MasterDetail, {
+      store: this.store,
+      schema: this.schema,
+      uischema: uischema,
+      schemaService: schemaService
+    });
+
+    ReactDOM.render(masterDetailComponent, this.container);
   }
 }
 

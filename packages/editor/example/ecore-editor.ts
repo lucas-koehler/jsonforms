@@ -5,10 +5,10 @@ import './eattribute.renderer';
 import { JsonEditor } from '../src/jsoneditor';
 import { Editor } from '../src/editor';
 import { editorConfig } from './ecore-config';
-import { ecoreSchema } from './schema';
+// import { ecoreSchema } from './schema';
 
 export class EcoreEditor extends HTMLElement implements Editor {
-  private dataObject: Object;
+  // private dataObject: Object;
   public useLocalREST = false;
   private connected = false;
   private editor: JsonEditor;

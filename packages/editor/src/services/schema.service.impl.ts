@@ -336,10 +336,9 @@ const getSchemaIdForObject = (object: Object, modelMapping: ModelMapping): strin
   return null;
 }
 
-
 export class SchemaServiceImpl implements SchemaService {
   private selfContainedSchemas: { [id: string]: JsonSchema } = {};
-  private _identifyingProperty: string;
+  // private _identifyingProperty: string;
 
   constructor(private editorContext: EditorContext) {
     if (_.isEmpty(editorContext.dataSchema.id)) {
