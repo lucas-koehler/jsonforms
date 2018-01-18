@@ -1,4 +1,5 @@
 // tslint:disable:jsx-no-multiline-js
+// tslint:disable:jsx-no-lambda
 import * as React from 'react';
 import * as _ from 'lodash';
 import { connect } from 'react-redux';
@@ -35,6 +36,7 @@ const Dialog = (
                       d[key] = prop.schema.properties[key].default;
                     }
 
+                    // FIXME generate id if identifying property is set in editor to allow id refs
                     return d;
                   },
                   {}

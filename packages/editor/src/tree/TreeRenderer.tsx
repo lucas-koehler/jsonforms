@@ -22,6 +22,9 @@ import ObjectListItem from './ObjectListItem';
 import ExpandRootArray from './ExpandRootArray';
 import Dialog from './Dialog';
 import { SchemaService } from '../services/schema.service';
+import HTML5Backend from 'react-dnd-html5-backend';
+// import TouchBackend from 'react-dnd-touch-backend';
+import { DragDropContext } from 'react-dnd';
 
 export interface MasterProps {
   schema: JsonSchema;
@@ -48,7 +51,6 @@ const Master = (
     rootData,
     schemaService
   }: MasterProps) => {
-  // TODO: so far no drag and drop support
   if (schema.items !== undefined) {
     return (
       <ul>
@@ -74,6 +76,7 @@ const Master = (
         selection={selection}
         handlers={handlers}
         schemaService={schemaService}
+        isRoot={true}
       />
     </ul>
   );
@@ -272,7 +275,9 @@ const mapDispatchToProps = dispatch => ({
   }
 });
 
+const DnDTreeMasterDetail =
+  DragDropContext(HTML5Backend)(TreeMasterDetail);
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(TreeMasterDetail);
+)(DnDTreeMasterDetail);

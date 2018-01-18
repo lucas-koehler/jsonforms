@@ -36,7 +36,7 @@ export * from './editor-config';
  */
 export class JsonEditor extends HTMLElement implements Editor {
   public static rootData;
-  static uiSchemata: {[schemaId: string]: UISchemaElement} = {};
+  static uiSchemata: { [schemaId: string]: UISchemaElement } = {};
 
   static getUiSchema(schemaId: string): UISchemaElement {
     return JsonEditor.uiSchemata[schemaId];
@@ -87,6 +87,7 @@ export class JsonEditor extends HTMLElement implements Editor {
   set data(data: object) {
     this.editorContext.data = data;
     JsonEditor.rootData = data;
+    // FIXME set data to store
     this.render();
   }
 
