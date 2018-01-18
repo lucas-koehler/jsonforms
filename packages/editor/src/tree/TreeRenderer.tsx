@@ -22,6 +22,8 @@ import ObjectListItem from './ObjectListItem';
 import ExpandRootArray from './ExpandRootArray';
 import Dialog from './Dialog';
 import { SchemaService } from '../services/schema.service';
+import HTML5Backend from 'react-dnd-html5-backend';
+import { DragDropContext } from 'react-dnd';
 
 export interface MasterProps {
   schema: JsonSchema;
@@ -74,6 +76,7 @@ const Master = (
         selection={selection}
         handlers={handlers}
         schemaService={schemaService}
+        isRoot={true}
       />
     </ul>
   );
@@ -272,7 +275,8 @@ const mapDispatchToProps = dispatch => ({
   }
 });
 
+const DnDTreeMasterDetail = DragDropContext(HTML5Backend)(TreeMasterDetail);
 export default connect(
   mapStateToProps,
   mapDispatchToProps
-)(TreeMasterDetail);
+)(DnDTreeMasterDetail);

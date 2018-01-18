@@ -10,7 +10,9 @@ import {
   update
 } from '@jsonforms/core';
 import ExpandArray from './ExpandArray';
-import { SchemaService } from '../services/schema.service';
+import { ContainmentProperty, SchemaService } from '../services/schema.service';
+import { DragSource, DragSourceMonitor } from 'react-dnd';
+import { DragInfo, Types } from './dnd.util';
 
 const getNamingFunction =
   (schema: JsonSchema, uischema: UISchemaElement) => (element: Object): string => {
@@ -103,18 +105,17 @@ const ObjectListItem = (
         </span>
       </div>
       {
-      Object.keys(groupedProps).map(groupKey =>
-        <ul key={_.head(groupedProps[groupKey]).property}>
+        Object.keys(groupedProps).map(groupKey =>
           <ExpandArray
-                props={groupedProps[groupKey]}
-                path={path}
-                schema={schema}
-                selection={selection}
-                uischema={uischema}
-                handlers={handlers}
-                schemaService={schemaService}
+            key={_.head(groupedProps[groupKey]).property}
+            containmentProps={groupedProps[groupKey]}
+            path={path}
+            schema={schema}
+            selection={selection}
+            uischema={uischema}
+            handlers={handlers}
+            schemaService={schemaService}
           />
-        </ul>
       )
     }
     </li>
@@ -160,8 +161,84 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
   };
 };
 
+export interface ObjectListItemDndProps extends ObjectListItemProps {
+  isRoot?: boolean;
+  /**
+   * The Containment Properties of the parent list containing this item.
+   * Will be needed to determine whether another list item can be dropped next to this one.
+   */
+  parentProperties?: ContainmentProperty[];
+  // Drag and Drop:
+  connectDragSource;
+}
+
+const ObjectListItemDnd = (
+  {
+    path,
+    schema,
+    uischema,
+    rootData,
+    data,
+    handlers,
+    selection,
+    schemaService,
+    isRoot,
+    connectDragSource
+  }: ObjectListItemDndProps
+) => {
+  const listItem = (
+    <ObjectListItem
+      path={path}
+      schema={schema}
+      uischema={uischema}
+      rootData={rootData}
+      data={data}
+      handlers={handlers}
+      selection={selection}
+      schemaService={schemaService}
+    />
+  );
+  if (isRoot === true) {
+    // No Drag and Drop
+    return listItem;
+  }
+
+  // wrap in div because react-dnd does not allow directly connecting to components
+  return connectDragSource(<div>{listItem}</div>);
+};
+
+/**
+ * Define the drag and drop behavior of the list items
+ */
+const objectDragSource = {
+  beginDrag(props, _monitor: DragSourceMonitor, _component) {
+    const dragInfo: DragInfo = {
+      path: props.path,
+      data: props.data,
+      schema: props.schema
+    };
+
+    console.log('drag started', props.path);
+
+    return dragInfo;
+  }
+};
+
+/**
+ * Injects drag and drop related properties into an expanded array
+ */
+const collect = (dndConnect, _monitor) => {
+  return {
+    connectDragSource: dndConnect.dragSource()
+  };
+};
+
+// TODO: probably also need to configure list items as a drop target to
+// allow sortable behavior inside of lists
+
+const listItemDnd = DragSource(Types.TREE_DND, objectDragSource, collect)(ObjectListItemDnd);
 export default connect(
   mapStateToProps,
   mapDispatchToProps,
   mergeProps
-)(ObjectListItem);
+)(listItemDnd);
