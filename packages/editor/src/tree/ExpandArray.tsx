@@ -10,7 +10,13 @@ import {
 } from '@jsonforms/core';
 import ObjectListItem from './ObjectListItem';
 import { DropTarget, DropTargetMonitor } from 'react-dnd';
-import { CSS, DragInfo, DropResult, mapDispatchToTreeListProps, Types } from './dnd.util';
+import {
+  canDropDraggedItem,
+  CSS,
+  DragInfo,
+  DropResult,
+  mapDispatchToTreeListProps,
+  Types } from './dnd.util';
 import { ContainmentProperty, SchemaService } from '../services/schema.service';
 
 export interface ExpandArrayProps {
@@ -67,6 +73,7 @@ export const ExpandArray = (
           handlers={handlers}
           uischema={uischema}
           schemaService={schemaService}
+          parentProperties={containmentProps}
         />
       );
     })
@@ -77,6 +84,7 @@ export interface ExpandArrayContainerProps extends ExpandArrayProps {
   connectDropTarget?: any;
   isOver?: boolean;
   validDropTarget?: boolean;
+  moveListItem?(data: any, oldPath: string, newPath: string): boolean;
 }
 
 // TODO: update selected element once selection has been changed
@@ -93,11 +101,9 @@ export const ExpandArrayContainer = (
     connectDropTarget,
     isOver, // hover over the list excluding nested lists
     // isOverNested, // hover over a nested listed but not this one
-    validDropTarget
+    validDropTarget,
   }
 ) => {
-
-  const composedPath = Paths.compose(path, _.head(containmentProps).property);
 
   if (_.isEmpty(containmentProps)) {
     return undefined;
@@ -116,7 +122,7 @@ export const ExpandArrayContainer = (
     <ul key={_.head(containmentProps).property} className={className}>
       <ExpandArray
         containmentProps={containmentProps}
-        path={composedPath}
+        path={path}
         rootData={rootData}
         selection={selection}
         handlers={handlers}
@@ -149,56 +155,33 @@ const collect = (dndConnect, monitor) => {
  * (e.g. a draggable component hovers over an expanded array).
  */
 const arrayDropTarget = {
-  hover: (_props, _monitor, _component) => {
-    // TODO implement hover if eeded
-
-    // monitor.isOver({ shallow: true })
-    // ^ returns if its over without including nested targets
-  },
-
   /**
    * Tests wether the currently dragged object list item can be dropped in this list
    * by checking whether the item's schema id matches with a containment property of this list.
    */
   canDrop: (props: ExpandArrayContainerProps, monitor: DropTargetMonitor) => {
-    const dragInfo = monitor.getItem() as DragInfo;
-
-    if (_.isEmpty(dragInfo.schema.id)) {
-      // Cannot determine if this is a valid drop point without schema id
-      console.warn(`The given schema for the data at path '${dragInfo.path}' does not have an ID.`
-                    + `No drag and drop is possible`,
-                   dragInfo.schema);
-    }
-    const matchingProps = props.containmentProps
-      .filter(prop => prop.schema.id === dragInfo.schema.id);
-
-    return matchingProps.length > 0;
+    return canDropDraggedItem(props.containmentProps, monitor.getItem() as DragInfo);
   },
 
   /**
-   * Called when an items was dropped at a valid location (canDrop() === true)
+   * Called when an item was dropped at a valid location (canDrop() === true)
    * The calls also go up the chain when the drop occurred in a nested component.
    * The most nested one is called first, return results are available
    * from the before called component.
    */
-  drop: (props, monitor: DropTargetMonitor, _component) => {
+  drop: (props, monitor: DropTargetMonitor) => {
     // drop was handled by a nested list
-    const dropResult = monitor.getDropResult() as DropResult;
-    if (!_.isEmpty(dropResult) && dropResult.handledByList) {
-      return;
+    if (monitor.didDrop()) {
+      return monitor.getDropResult();
     }
-
-    // item was dropped at valid location
-    /*
-     * TODO move data by triggering redux action:
-     * use moveListItem from dnd.util.ts
-    */
 
     // TODO remove console.log
     console.log('valid drop of data at: ' + props.path);
 
     const dropInfo: DropResult = {
-      handledByList: true
+      isHandled: true,
+      move: true,
+      moveTarget: Paths.compose(props.path, '0')
     };
 
     return dropInfo;
