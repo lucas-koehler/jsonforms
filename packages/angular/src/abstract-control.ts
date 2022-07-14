@@ -115,17 +115,21 @@ export abstract class JsonFormsAbstractControl<
           required,
           config ? config.hideRequiredAsterisk : false
         );
-        this.data = data;
         this.error = errors;
-        this.enabled = enabled;
-        this.isEnabled() ? this.form.enable() : this.form.disable();
+        if (this.enabled !== enabled) {
+          this.enabled = enabled;
+          this.isEnabled() ? this.form.enable() : this.form.disable();
+        }
         this.hidden = !visible;
         this.scopedSchema = schema;
         this.rootSchema = rootSchema;
         this.description =
           this.scopedSchema !== undefined ? this.scopedSchema.description : '';
         this.id = props.id;
-        this.form.setValue(data);
+        if (this.data !== data) {
+          this.data = data;
+          this.form.setValue(data);
+        }
         this.propsPath = path;
         this.mapAdditionalProps(props);
       }
