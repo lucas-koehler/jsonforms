@@ -54,9 +54,14 @@ export class LayoutRenderer<T extends Layout> extends JsonFormsBaseRenderer<T>
     this.subscription = this.jsonFormsService.$state.subscribe({
       next: (state: JsonFormsState) => {
         const props = mapStateToLayoutProps(state, this.getOwnProps());
-        this.label = props.label;
-        this.hidden = !props.visible;
-        this.changeDetectionRef.markForCheck();
+        if (this.label !== props.label) {
+          this.label = props.label;
+          this.changeDetectionRef.markForCheck();
+        }
+        if (this.hidden !== !props.visible) {
+          this.hidden = !props.visible;
+          this.changeDetectionRef.markForCheck();
+        }
       }
     });
   }
