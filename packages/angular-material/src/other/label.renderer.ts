@@ -22,7 +22,7 @@
   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
   THE SOFTWARE.
 */
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import {
   JsonFormsAngularService,
   JsonFormsBaseRenderer
@@ -42,7 +42,8 @@ import { Subscription } from 'rxjs';
   selector: 'LabelRenderer',
   template: `
     <label class="mat-title" fxFlex> {{ label }} </label>
-  `
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class LabelRenderer extends JsonFormsBaseRenderer<LabelElement> {
   label: string;
@@ -50,15 +51,21 @@ export class LabelRenderer extends JsonFormsBaseRenderer<LabelElement> {
 
   private subscription: Subscription;
 
-  constructor(private jsonFormsService: JsonFormsAngularService) {
+  constructor(private jsonFormsService: JsonFormsAngularService, private changeDetectionRef: ChangeDetectorRef) {
     super();
   }
   ngOnInit() {
     this.subscription = this.jsonFormsService.$state.subscribe({
       next: (state: JsonFormsState) => {
         const props = mapStateToLabelProps(state, this.getOwnProps() as OwnPropsOfLabel);
-        this.visible = props.visible;
-        this.label = props.text
+        if (this.visible !== props.visible) {
+          this.visible = props.visible;
+          this.changeDetectionRef.markForCheck();
+        }
+        if (this.label !== props.text) {
+          this.label = props.text
+          this.changeDetectionRef.markForCheck();
+        }
       }
     });
   }
